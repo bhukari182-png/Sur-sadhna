@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-cinzel: 'Cinzel', serif;
+    --font-cormorant: 'Cormorant Garamond', serif;
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+}
+
+.font-cinzel {
+  font-family: var(--font-cinzel);
+}
+
+.font-classical {
+  font-family: var(--font-cormorant);
+}
+
+/* Custom scrollbars for touch & desktop */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(20, 5, 8, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.6);
+}
+
+/* Gold gradient text helper */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #aa820a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.border-gold-subtle {
+  border-color: rgba(212, 175, 55, 0.22);
+}
+
+/* Prevent unwanted callout menus on touch */
+* {
+  -webkit-tap-highlight-color: transparent;
+}

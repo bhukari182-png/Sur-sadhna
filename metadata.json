@@ -1,0 +1,10 @@
+{
+  "name": "SUR SADHANA – Classical Music Studio",
+  "description": "Your Personal Classical Music Riyaz Studio. Professional Indian & Pakistani classical music practice application with authentic Tabla, Tanpura, Swarmandal, and vocal riyaz recorder.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
