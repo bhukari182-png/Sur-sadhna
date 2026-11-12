@@ -4,6 +4,7 @@ import { VisualBeatCircle } from './VisualBeatCircle';
 import { TaalPatternEditor } from './TaalPatternEditor';
 import { Play, Pause, Square, RotateCcw, Sliders, Volume2, Sparkles, HelpCircle } from 'lucide-react';
 import { AudioEngine } from '../audio/AudioEngine';
+import tablaImage from '../assets/images/tabla_pair_studio_1794450440438.jpg';
 
 interface TablaStudioProps {
   taals: Taal[];
@@ -112,7 +113,7 @@ export const TablaStudio: React.FC<TablaStudioProps> = ({
           {/* Instrument Thumbnail */}
           <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-xl overflow-hidden border border-[#d4af37]/40 shadow-2xl shrink-0">
             <img
-              src="/src/assets/images/tabla_pair_studio_1794450440438.jpg"
+              src={tablaImage}
               alt="Artisan Tabla Pair"
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"

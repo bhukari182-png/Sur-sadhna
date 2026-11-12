@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Raag, IndianSwara, Saptak } from '../types/music';
 import { AudioEngine } from '../audio/AudioEngine';
 import { Play, RotateCcw, Volume2, Sparkles, Sliders, RefreshCw, Music } from 'lucide-react';
+import swarmandalImage from '../assets/images/swarmandal_zither_studio_1794450442057.jpg';
 
 interface SwarmandalStudioProps {
   raags: Raag[];
@@ -101,7 +102,7 @@ export const SwarmandalStudio: React.FC<SwarmandalStudioProps> = ({
 
           <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-xl overflow-hidden border border-[#d4af37]/40 shadow-2xl shrink-0">
             <img
-              src="/src/assets/images/swarmandal_zither_studio_1794450442057.jpg"
+              src={swarmandalImage}
               alt="Swarmandal Zither"
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"

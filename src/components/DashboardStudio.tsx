@@ -2,6 +2,7 @@ import React from 'react';
 import { Taal, Raag, LayaSpeed, PitchNote } from '../types/music';
 import { TabId } from './Navigation';
 import { Play, Square, Sparkles, Mic, Activity, ArrowRight, Disc3, Music2, Sliders, Volume2 } from 'lucide-react';
+import heroBanner from '../assets/images/sur_sadhana_hero_banner_1794450439677.jpg';
 
 interface DashboardStudioProps {
   onNavigateTab: (tabId: TabId) => void;
@@ -91,7 +92,7 @@ export const DashboardStudio: React.FC<DashboardStudioProps> = ({
           {/* Hero Instrument Artwork */}
           <div className="lg:col-span-5 relative h-64 sm:h-80 lg:h-full min-h-[300px]">
             <img
-              src="/src/assets/images/sur_sadhana_hero_banner_1794450439677.jpg"
+              src={heroBanner}
               alt="Traditional Indian Classical Instruments"
               className="w-full h-full object-cover lg:rounded-r-3xl"
               referrerPolicy="no-referrer"

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PitchNote } from '../types/music';
 import { Play, Square, Sliders, Volume2, Sparkles, Music } from 'lucide-react';
 import { AudioEngine } from '../audio/AudioEngine';
+import tanpuraImage from '../assets/images/tanpura_acoustic_studio_1794450442796.jpg';
 
 interface TanpuraStudioProps {
   isPlaying: boolean;
@@ -107,7 +108,7 @@ export const TanpuraStudio: React.FC<TanpuraStudioProps> = ({
 
           <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-xl overflow-hidden border border-[#d4af37]/40 shadow-2xl shrink-0">
             <img
-              src="/src/assets/images/tanpura_acoustic_studio_1794450442796.jpg"
+              src={tanpuraImage}
               alt="Miraj Tanpura"
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
