@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Taal, Raag, LayaSpeed, PitchNote } from './types/music';
+import { Taal, Raag, LayaSpeed, PitchNote, TablaPerformanceMode } from './types/music';
 import { INITIAL_TAALS } from './data/taals';
 import { CLASSICAL_RAAGS } from './data/raags';
 import { AudioEngine } from './audio/AudioEngine';
@@ -19,6 +19,7 @@ import { RiyazStudio } from './components/RiyazStudio';
 import { RaagPracticeStudio } from './components/RaagPracticeStudio';
 import { RecordingStudio } from './components/RecordingStudio';
 import { SettingsStudio } from './components/SettingsStudio';
+import { AboutModal } from './components/AboutModal';
 
 const LOCAL_STORAGE_TAALS_KEY = 'sur_sadhana_custom_taals';
 const LOCAL_STORAGE_SETTINGS_KEY = 'sur_sadhana_user_settings';
@@ -27,8 +28,9 @@ export default function App() {
   const audioEngineRef = useRef<AudioEngine>(AudioEngine.getInstance());
   const audioEngine = audioEngineRef.current;
 
-  // Active Tab
+  // Active Tab & Modals
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState<boolean>(false);
 
   // Taals & Raags
   const [taals, setTaals] = useState<Taal[]>(() => {
@@ -58,6 +60,7 @@ export default function App() {
   const [isTablaPlaying, setIsTablaPlaying] = useState<boolean>(false);
   const [tablaBpm, setTablaBpm] = useState<number>(108);
   const [currentLaya, setCurrentLaya] = useState<LayaSpeed>('madhya');
+  const [tablaPerformanceMode, setTablaPerformanceMode] = useState<TablaPerformanceMode>('fillers');
   const [currentMatra, setCurrentMatra] = useState<number>(1);
   const [isCurrentSam, setIsCurrentSam] = useState<boolean>(true);
 
@@ -175,7 +178,10 @@ export default function App() {
       (matra, _bol, isSam) => {
         setCurrentMatra(matra);
         setIsCurrentSam(isSam);
-      }
+      },
+      tablaPerformanceMode,
+      activeTaal.fillerBeats,
+      activeTaal.advancedBeats
     );
   };
 
@@ -205,11 +211,32 @@ export default function App() {
     }
   };
 
+  const handlePerformanceModeChange = (mode: TablaPerformanceMode) => {
+    setTablaPerformanceMode(mode);
+    if (isTablaPlaying) {
+      audioEngine.updateTablaParams(
+        tablaBpm,
+        currentLaya,
+        activeTaal.beats,
+        mode,
+        activeTaal.fillerBeats,
+        activeTaal.advancedBeats
+      );
+    }
+  };
+
   const handleSelectTaal = (taal: Taal) => {
     setActiveTaalId(taal.id);
     setTablaBpm(taal.defaultBpm);
     if (isTablaPlaying) {
-      audioEngine.updateTablaParams(taal.defaultBpm, currentLaya, taal.beats);
+      audioEngine.updateTablaParams(
+        taal.defaultBpm,
+        currentLaya,
+        taal.beats,
+        tablaPerformanceMode,
+        taal.fillerBeats,
+        taal.advancedBeats
+      );
       handleResetTabla();
     } else {
       setCurrentMatra(1);
@@ -220,14 +247,28 @@ export default function App() {
   const handleBpmChange = (newBpm: number) => {
     setTablaBpm(newBpm);
     if (isTablaPlaying) {
-      audioEngine.updateTablaParams(newBpm, currentLaya);
+      audioEngine.updateTablaParams(
+        newBpm,
+        currentLaya,
+        activeTaal.beats,
+        tablaPerformanceMode,
+        activeTaal.fillerBeats,
+        activeTaal.advancedBeats
+      );
     }
   };
 
   const handleLayaChange = (newLaya: LayaSpeed) => {
     setCurrentLaya(newLaya);
     if (isTablaPlaying) {
-      audioEngine.updateTablaParams(tablaBpm, newLaya);
+      audioEngine.updateTablaParams(
+        tablaBpm,
+        newLaya,
+        activeTaal.beats,
+        tablaPerformanceMode,
+        activeTaal.fillerBeats,
+        activeTaal.advancedBeats
+      );
     }
   };
 
@@ -240,7 +281,14 @@ export default function App() {
       console.warn(e);
     }
     if (isTablaPlaying) {
-      audioEngine.updateTablaParams(tablaBpm, currentLaya, updatedTaal.beats);
+      audioEngine.updateTablaParams(
+        tablaBpm,
+        currentLaya,
+        updatedTaal.beats,
+        tablaPerformanceMode,
+        updatedTaal.fillerBeats,
+        updatedTaal.advancedBeats
+      );
     }
   };
 
@@ -251,7 +299,14 @@ export default function App() {
     setTaals(updatedList);
     localStorage.setItem(LOCAL_STORAGE_TAALS_KEY, JSON.stringify(updatedList));
     if (isTablaPlaying) {
-      audioEngine.updateTablaParams(tablaBpm, currentLaya, original.beats);
+      audioEngine.updateTablaParams(
+        tablaBpm,
+        currentLaya,
+        original.beats,
+        tablaPerformanceMode,
+        original.fillerBeats,
+        original.advancedBeats
+      );
     }
   };
 
@@ -370,6 +425,7 @@ export default function App() {
         onMasterVolumeChange={setMasterVolume}
         isDarkMode={isDarkMode}
         onToggleTheme={handleToggleTheme}
+        onOpenAbout={() => setIsAboutModalOpen(true)}
       />
 
       {/* Navigation Sub-header (Desktop) & Bottom Bar (Mobile) */}
@@ -397,6 +453,7 @@ export default function App() {
             onToggleTanpura={handleToggleTanpura}
             onStartFullRiyazSession={handleStartFullRiyazSession}
             currentMatra={currentMatra}
+            onOpenAbout={() => setIsAboutModalOpen(true)}
           />
         )}
 
@@ -416,6 +473,8 @@ export default function App() {
             onBpmChange={handleBpmChange}
             laya={currentLaya}
             onLayaChange={handleLayaChange}
+            performanceMode={tablaPerformanceMode}
+            onPerformanceModeChange={handlePerformanceModeChange}
             currentMatra={currentMatra}
             volume={tablaVolume}
             onVolumeChange={setTablaVolume}
@@ -518,6 +577,12 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* About Ustad Zawar Hussain Modal */}
+      <AboutModal
+        isOpen={isAboutModalOpen}
+        onClose={() => setIsAboutModalOpen(false)}
+      />
     </div>
   );
 }

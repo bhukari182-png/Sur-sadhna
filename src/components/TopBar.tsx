@@ -19,6 +19,7 @@ interface TopBarProps {
   onMasterVolumeChange: (v: number) => void;
   isDarkMode: boolean;
   onToggleTheme: () => void;
+  onOpenAbout?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -38,6 +39,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onMasterVolumeChange,
   isDarkMode,
   onToggleTheme,
+  onOpenAbout,
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full bg-[#180509]/95 backdrop-blur-md border-b border-[#d4af37]/25 px-4 py-2.5 shadow-md">
@@ -48,16 +50,22 @@ export const TopBar: React.FC<TopBarProps> = ({
             <Music className="w-5 h-5 text-[#140508]" />
           </div>
           <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="font-cinzel text-base md:text-lg font-black tracking-wider text-[#ffd700] whitespace-nowrap">
-                SUR SADHANA
+            <div className="flex items-center gap-2">
+              <span className="font-cinzel text-sm sm:text-base md:text-lg font-black tracking-wider text-[#ffd700] whitespace-nowrap">
+                ZAWAR HUSSAIN – SUR SADHNA
               </span>
-              <span className="text-xs text-[#d4af37]/80 font-serif">
-                سر سادھنا
-              </span>
+              {onOpenAbout && (
+                <button
+                  onClick={onOpenAbout}
+                  className="hidden md:inline-flex items-center px-2 py-0.5 rounded-full bg-gradient-to-r from-[#d4af37]/25 to-[#ffd700]/10 border border-[#ffd700]/40 text-[10px] text-[#ffd700] font-bold hover:bg-[#d4af37]/40 transition"
+                  title="About Ustad Zawar Hussain"
+                >
+                  Ustad Zawar Hussain
+                </button>
+              )}
             </div>
-            <span className="text-[10px] text-[#d4af37]/70 tracking-tight hidden sm:inline">
-              Classical Music Riyaz Studio
+            <span className="text-[10px] text-[#d4af37]/80 tracking-tight hidden sm:inline font-medium">
+              Professional Indian Classical Music Practice Studio
             </span>
           </div>
         </div>

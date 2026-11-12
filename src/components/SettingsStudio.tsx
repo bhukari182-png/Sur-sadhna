@@ -433,6 +433,28 @@ export const SettingsStudio: React.FC<SettingsStudioProps> = ({
           </button>
         </div>
       </div>
+
+      {/* About Ustad Zawar Hussain Tribute Card */}
+      <div className="p-5 rounded-2xl bg-gradient-to-r from-[#240a12] via-[#1a060d] to-[#140409] border border-[#d4af37]/35 shadow-lg space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[#ffd700]" />
+            <h3 className="font-cinzel text-base font-bold text-[#ffd700]">
+              Zawar Hussain – Sur Sadhna
+            </h3>
+          </div>
+          <span className="text-[10px] uppercase tracking-wider text-[#ffd700] bg-[#330f19] px-2.5 py-0.5 rounded-full border border-[#d4af37]/40 font-semibold">
+            Ustad Zawar Hussain Edition
+          </span>
+        </div>
+        <p className="text-xs text-[#e6d5c3]/85 leading-relaxed">
+          Artistic direction and classical riyaz accompaniment designed under the guidance of <strong className="text-[#ffd700]">Ustad Zawar Hussain</strong>. Featuring 12 authentic classical Taals, live theka variations with fillers and virtuosic relas, acoustic Miraj Jawari Tanpura drone, Swarmandal harp zither, Harmonium, and microtonal vocal pitch detection.
+        </p>
+        <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#d4af37]/70">
+          <span>Platform: Progressive Web Application (PWA) / Android Mobile Optimized</span>
+          <span>Repository: bhukari182-png / Sur-sadhna</span>
+        </div>
+      </div>
     </div>
   );
 };

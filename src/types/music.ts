@@ -20,7 +20,9 @@ export type IndianSwara =
 
 export type Saptak = 'mandra' | 'madhya' | 'taar'; // Lower, Middle, Higher Octave
 
-export type LayaSpeed = 'vilambit' | 'madhya' | 'intermediate' | 'drut';
+export type LayaSpeed = 'vilambit' | 'madhya' | 'drut' | 'ati_drut';
+
+export type TablaPerformanceMode = 'basic' | 'fillers' | 'advanced';
 
 export interface BeatInfo {
   matra: number;          // 1-indexed (e.g., 1 to 16)
@@ -50,6 +52,8 @@ export interface Taal {
   category: 'classical' | 'semi-classical' | 'sufi_folk' | 'custom';
   vibhags: Vibhag[];
   beats: BeatInfo[];
+  fillerBeats?: BeatInfo[];
+  advancedBeats?: BeatInfo[];
   defaultBpm: number;
   isCustomizable?: boolean;
 }

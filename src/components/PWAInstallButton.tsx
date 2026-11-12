@@ -42,6 +42,8 @@ export const PWAInstallButton: React.FC = () => {
     };
   }, []);
 
+  const [showAndroidModal, setShowAndroidModal] = useState(false);
+
   const handleInstallClick = async () => {
     if (deferredPrompt) {
       await deferredPrompt.prompt();
@@ -53,8 +55,7 @@ export const PWAInstallButton: React.FC = () => {
     } else if (isIOS) {
       setShowIOSModal(true);
     } else {
-      // General feedback
-      alert('To install Sur Sadhana on your Android phone, tap your browser menu (⋮) and select "Install app" or "Add to Home screen".');
+      setShowAndroidModal(true);
     }
   };
 
@@ -65,11 +66,34 @@ export const PWAInstallButton: React.FC = () => {
       <button
         onClick={handleInstallClick}
         className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#aa820a] hover:from-[#ffd700] hover:to-[#c69a1b] text-[#140508] font-bold text-xs shadow-md transition"
-        title="Install Sur Sadhana as an Android or Desktop App"
+        title="Install Zawar Hussain – Sur Sadhna as an Android App"
       >
         <Download className="w-3.5 h-3.5" />
         <span>Install App</span>
       </button>
+
+      {showAndroidModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-[#1b080d] border border-[#d4af37]/40 p-6 text-[#f5e6d3] shadow-2xl">
+            <h3 className="font-cinzel text-lg font-bold text-[#ffd700]">
+              Install on Android Phone
+            </h3>
+            <p className="mt-3 text-xs text-[#d4af37]/90 leading-relaxed">
+              To install <strong>Zawar Hussain – Sur Sadhna</strong> on your phone:
+              <br /><br />
+              1. Tap your mobile browser menu (<strong className="text-white">⋮</strong> or three dots).<br /><br />
+              2. Select <strong className="text-white">"Install app"</strong> or <strong className="text-white">"Add to Home screen"</strong>.<br /><br />
+              3. Enjoy full-screen, ultra-low latency classical riyaz on your home screen!
+            </p>
+            <button
+              onClick={() => setShowAndroidModal(false)}
+              className="mt-5 w-full rounded-xl bg-[#2b0e14] border border-[#d4af37]/30 py-2.5 text-xs font-bold text-[#ffd700] hover:bg-[#3d141e] transition"
+            >
+              Got It
+            </button>
+          </div>
+        </div>
+      )}
 
       {showIOSModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -80,7 +104,7 @@ export const PWAInstallButton: React.FC = () => {
             <p className="mt-3 text-xs text-[#d4af37]/90 leading-relaxed">
               1. Tap the <strong>Share button</strong> (square with arrow) at the bottom of Safari.<br /><br />
               2. Scroll down and tap <strong>Add to Home Screen</strong> (ہوم اسکرین پر شامل کریں).<br /><br />
-              3. Launch Sur Sadhana directly from your home screen for full-screen offline riyaz!
+              3. Launch Zawar Hussain – Sur Sadhna directly from your home screen for full-screen offline riyaz!
             </p>
             <button
               onClick={() => setShowIOSModal(false)}

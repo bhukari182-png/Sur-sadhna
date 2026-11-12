@@ -18,6 +18,7 @@ interface DashboardStudioProps {
   onToggleTanpura: () => void;
   onStartFullRiyazSession: () => void;
   currentMatra: number;
+  onOpenAbout?: () => void;
 }
 
 export const DashboardStudio: React.FC<DashboardStudioProps> = ({
@@ -34,6 +35,7 @@ export const DashboardStudio: React.FC<DashboardStudioProps> = ({
   onToggleTanpura,
   onStartFullRiyazSession,
   currentMatra,
+  onOpenAbout,
 }) => {
   return (
     <div className="space-y-8">
@@ -42,22 +44,25 @@ export const DashboardStudio: React.FC<DashboardStudioProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
           {/* Hero Text */}
           <div className="lg:col-span-7 p-6 sm:p-8 lg:p-10 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#3c121e] border border-[#d4af37]/40 text-xs font-semibold text-[#ffd700]">
-              <Sparkles className="w-3.5 h-3.5 text-[#ffd700]" />
-              <span>Your Personal Classical Music Riyaz Studio</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#3c121e] border border-[#d4af37]/40 text-xs font-semibold text-[#ffd700]">
+                <Sparkles className="w-3.5 h-3.5 text-[#ffd700]" />
+                <span>Ustad Zawar Hussain Edition</span>
+              </div>
+              <span className="text-xs text-[#d4af37]/80 font-serif">استاد زوار حسین</span>
             </div>
 
             <div className="space-y-1">
-              <h1 className="font-cinzel text-3xl sm:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ffd700] via-[#f7e7ce] to-[#d4af37] tracking-tight leading-tight">
-                SUR SADHANA
+              <h1 className="font-cinzel text-2xl sm:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ffd700] via-[#f7e7ce] to-[#d4af37] tracking-tight leading-tight">
+                ZAWAR HUSSAIN – SUR SADHNA
               </h1>
-              <div className="font-serif text-xl sm:text-2xl text-[#ffd700]/90">
-                سر سادھنا — کلاسیکی موسیقی ریاض اسٹوڈیو
+              <div className="font-serif text-base sm:text-lg text-[#ffd700]/90 font-medium">
+                Professional Indian Classical Music Practice Studio
               </div>
             </div>
 
             <p className="text-xs sm:text-sm text-[#e6d5c3]/90 leading-relaxed max-w-xl">
-              Professional acoustic accompaniment inspired by traditional gharanas. Featuring authentic <strong>Tabla</strong> physical modeling with 9 traditional Taals (including Punjabi Dhamar, Pakistani Sulfakhta &amp; Kilwada), continuous <strong>Tanpura</strong> drone with Jawari thread resonance, <strong>Swarmandal</strong> harp zither, <strong>Harmonium</strong> guide, and live <strong>Sur Pariksha</strong> vocal pitch tracking.
+              Master the discipline of Indian and Pakistani classical riyaz under the artistic patronage of <strong className="text-[#ffd700]">Ustad Zawar Hussain</strong>. Featuring realistic live <strong>Tabla</strong> physical modeling with natural Bayan pitch-bends and resonant Dayan overtones, <strong>Theka Fillers &amp; Advanced Relas</strong>, continuous <strong>Tanpura</strong> drone with Miraj Jawari thread resonance, <strong>Swarmandal</strong> harp zither, <strong>Harmonium</strong> guide, and live <strong>Sur Pariksha</strong> vocal pitch tracking.
             </p>
 
             {/* Quick 1-Click Launch Button */}
@@ -70,12 +75,22 @@ export const DashboardStudio: React.FC<DashboardStudioProps> = ({
                 <span>Quick Start Full Riyaz (Tanpura + Tabla)</span>
               </button>
 
+              {onOpenAbout && (
+                <button
+                  onClick={onOpenAbout}
+                  className="flex items-center gap-2 px-4 py-3.5 rounded-xl bg-[#33111b] hover:bg-[#481726] border border-[#d4af37]/50 text-[#ffd700] font-bold text-xs transition"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-[#ffd700]" />
+                  <span>About Ustad Zawar Hussain</span>
+                </button>
+              )}
+
               <button
                 onClick={() => onNavigateTab('riyaz')}
-                className="flex items-center gap-2 px-5 py-3.5 rounded-xl bg-[#2b0e15] hover:bg-[#3d141e] border border-[#d4af37]/40 text-[#ffd700] font-bold text-xs transition"
+                className="flex items-center gap-2 px-4 py-3.5 rounded-xl bg-[#2b0e15] hover:bg-[#3d141e] border border-[#d4af37]/40 text-[#ffd700] font-bold text-xs transition"
               >
                 <Activity className="w-4 h-4 text-[#ffd700]" />
-                <span>Live Vocal Pitch Tuner</span>
+                <span>Vocal Tuner</span>
               </button>
             </div>
 
@@ -141,7 +156,7 @@ export const DashboardStudio: React.FC<DashboardStudioProps> = ({
               <div className="text-xs text-[#d4af37]/70 font-serif mb-2">طبلہ و تال اسٹوڈیو</div>
 
               <p className="text-xs text-[#e6d5c3]/80 leading-relaxed mb-4">
-                9 authentic Taals (Keharwa, Dhruv, Deepchandi, Punjabi Dhamar, Pakistani Sulfakhta, Teentaal, Ektaal, Jhoomra, Kilwada). Custom pattern editor and 4 Laya speeds.
+                12 authentic Taals (Teentaal, Ektaal, Jhaptaal, Dadra, Keharwa, Rupak, Punjabi Dhamar, Soolfakhta, Deepchandi, Dhruv, Jhoomra, Kilwada). Live Theka Fillers, Virtuosic Relas, and 4 Laya speeds.
               </p>
             </div>
 

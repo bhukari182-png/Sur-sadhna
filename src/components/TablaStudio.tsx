@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Taal, LayaSpeed } from '../types/music';
+import { Taal, LayaSpeed, TablaPerformanceMode } from '../types/music';
 import { VisualBeatCircle } from './VisualBeatCircle';
 import { TaalPatternEditor } from './TaalPatternEditor';
-import { Play, Pause, Square, RotateCcw, Sliders, Volume2, Sparkles, HelpCircle } from 'lucide-react';
+import { Play, Pause, Square, RotateCcw, Sliders, Volume2, Sparkles, HelpCircle, Zap } from 'lucide-react';
 import { AudioEngine } from '../audio/AudioEngine';
 import tablaImage from '../assets/images/tabla_pair_studio_1794450440438.jpg';
 
@@ -21,6 +21,8 @@ interface TablaStudioProps {
   onBpmChange: (bpm: number) => void;
   laya: LayaSpeed;
   onLayaChange: (laya: LayaSpeed) => void;
+  performanceMode: TablaPerformanceMode;
+  onPerformanceModeChange: (mode: TablaPerformanceMode) => void;
   currentMatra: number;
   volume: number;
   onVolumeChange: (v: number) => void;
@@ -41,6 +43,8 @@ export const TablaStudio: React.FC<TablaStudioProps> = ({
   onBpmChange,
   laya,
   onLayaChange,
+  performanceMode,
+  onPerformanceModeChange,
   currentMatra,
   volume,
   onVolumeChange,
@@ -131,34 +135,34 @@ export const TablaStudio: React.FC<TablaStudioProps> = ({
       <div className="bg-[#18050a] border border-[#d4af37]/25 rounded-2xl p-4 shadow-lg">
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs uppercase font-bold tracking-wider text-[#d4af37]">
-            Select Taal (9 Authentic Classical &amp; Sufi Patterns)
+            Select Taal ({taals.length} Authentic Classical &amp; Sufi Patterns)
           </span>
           <span className="text-xs text-[#d4af37]/70">
-            {activeTaal.matras} Matras Active
+            {activeTaal.matras} Matras Active · {activeTaal.name}
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-12 gap-2">
           {taals.map((t) => {
             const isSelected = t.id === activeTaal.id;
             return (
               <button
                 key={t.id}
                 onClick={() => onSelectTaal(t)}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
+                className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all ${
                   isSelected
                     ? 'bg-gradient-to-b from-[#3d131e] to-[#250911] border-[#ffd700] text-[#ffd700] shadow-md shadow-[#ffd700]/20 scale-105'
                     : 'bg-[#1e070c] border-[#d4af37]/20 text-[#d4af37]/80 hover:bg-[#2b0e15] hover:text-[#ffd700]'
                 }`}
               >
-                <span className="font-serif font-bold text-sm tracking-tight truncate w-full">
+                <span className="font-serif font-bold text-xs tracking-tight truncate w-full">
                   {t.name}
                 </span>
-                <span className="text-[11px] opacity-80 font-serif">
+                <span className="text-[10px] opacity-80 font-serif">
                   {t.urduName}
                 </span>
-                <span className="text-[10px] text-[#d4af37]/60 font-mono mt-1">
-                  {t.matras} Matras
+                <span className="text-[9px] text-[#d4af37]/60 font-mono mt-0.5">
+                  {t.matras}M
                 </span>
               </button>
             );
@@ -216,23 +220,62 @@ export const TablaStudio: React.FC<TablaStudioProps> = ({
 
         {/* Right Column: Laya, BPM, Pattern Editor trigger, and Bol Timeline */}
         <div className="lg:col-span-7 bg-[#18060a] border border-[#d4af37]/25 rounded-2xl p-6 flex flex-col justify-between shadow-xl space-y-6">
+          {/* Tabla Playing Style / Performance Mode */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs uppercase font-bold tracking-wider text-[#d4af37] flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-[#ffd700]" />
+                Playing Style &amp; Fillers / اندازِ طبلہ
+              </span>
+              <span className="text-xs text-[#ffd700] font-semibold">
+                {performanceMode === 'basic' && '1. Basic Theka'}
+                {performanceMode === 'fillers' && '2. Theka with Professional Fillers'}
+                {performanceMode === 'advanced' && '3. Advanced Performance'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {[
+                { id: 'basic', label: '1. Basic Theka', sub: 'Traditional steady canonical theka' },
+                { id: 'fillers', label: '2. With Fillers', sub: 'Cycle-ending mohras & authentic tihais' },
+                { id: 'advanced', label: '3. Advanced Performance', sub: 'Virtuosic relas & concert accompaniment' },
+              ].map((style) => (
+                <button
+                  key={style.id}
+                  onClick={() => onPerformanceModeChange(style.id as TablaPerformanceMode)}
+                  className={`p-2.5 rounded-xl border text-left transition ${
+                    performanceMode === style.id
+                      ? 'bg-gradient-to-r from-[#d4af37] to-[#b8860b] text-[#140508] font-bold border-[#ffd700] shadow-md shadow-[#d4af37]/25'
+                      : 'bg-[#21090f] text-[#d4af37] border-[#d4af37]/25 hover:bg-[#2e0e16]'
+                  }`}
+                >
+                  <div className="text-xs font-bold leading-tight">{style.label}</div>
+                  <div className="text-[10px] opacity-80 mt-0.5 line-clamp-1">{style.sub}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Laya (Speed Category) Selector */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs uppercase font-bold tracking-wider text-[#d4af37]">
                 Laya / لے (Speed Setting)
               </span>
-              <span className="text-xs text-[#d4af37]/80 capitalize">
-                Current: {laya}
+              <span className="text-xs text-[#ffd700] capitalize font-medium">
+                {laya === 'vilambit' && 'Vilambit (Slow)'}
+                {laya === 'madhya' && 'Madhya (Medium)'}
+                {laya === 'drut' && 'Drut (Fast)'}
+                {laya === 'ati_drut' && 'Ati Drut (Very Fast)'}
               </span>
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
-                { id: 'vilambit', label: 'Vilambit', sub: 'Very Slow / ولنبت' },
-                { id: 'madhya', label: 'Madhya', sub: 'Medium / مدھیا' },
-                { id: 'intermediate', label: 'Intermediate', sub: 'Medium-Fast' },
-                { id: 'drut', label: 'Drut', sub: 'Fast / درت' },
+                { id: 'vilambit', label: 'Vilambit', sub: 'Slow / ولنبت (0.5x)' },
+                { id: 'madhya', label: 'Madhya', sub: 'Medium / مدھیا (1.0x)' },
+                { id: 'drut', label: 'Drut', sub: 'Fast / درت (1.75x)' },
+                { id: 'ati_drut', label: 'Ati Drut', sub: 'Very Fast / درت ترین (2.5x)' },
               ].map((item) => (
                 <button
                   key={item.id}
