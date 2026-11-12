@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Taal, LayaSpeed, TablaPerformanceMode } from '../types/music';
 import { VisualBeatCircle } from './VisualBeatCircle';
 import { TaalPatternEditor } from './TaalPatternEditor';
-import { Play, Pause, Square, RotateCcw, Sliders, Volume2, Sparkles, HelpCircle, Zap } from 'lucide-react';
+import { TablaSampleManagerModal } from './TablaSampleManagerModal';
+import { Play, Pause, Square, RotateCcw, Sliders, Volume2, Sparkles, HelpCircle, Zap, Disc3, Music } from 'lucide-react';
 import { AudioEngine } from '../audio/AudioEngine';
 import tablaImage from '../assets/images/tabla_pair_studio_1794450440438.jpg';
 
@@ -26,6 +27,13 @@ interface TablaStudioProps {
   currentMatra: number;
   volume: number;
   onVolumeChange: (v: number) => void;
+  dayanVolume: number;
+  onDayanVolumeChange: (v: number) => void;
+  bayanVolume: number;
+  onBayanVolumeChange: (v: number) => void;
+  dayanFineCents: number;
+  onDayanFineCentsChange: (cents: number) => void;
+  rootSaNote: string;
 }
 
 export const TablaStudio: React.FC<TablaStudioProps> = ({
@@ -48,8 +56,16 @@ export const TablaStudio: React.FC<TablaStudioProps> = ({
   currentMatra,
   volume,
   onVolumeChange,
+  dayanVolume,
+  onDayanVolumeChange,
+  bayanVolume,
+  onBayanVolumeChange,
+  dayanFineCents,
+  onDayanFineCentsChange,
+  rootSaNote,
 }) => {
   const [showPatternEditor, setShowPatternEditor] = useState(false);
+  const [showSampleManager, setShowSampleManager] = useState(false);
   const [tapTimes, setTapTimes] = useState<number[]>([]);
   const audioEngine = AudioEngine.getInstance();
 
@@ -337,25 +353,119 @@ export const TablaStudio: React.FC<TablaStudioProps> = ({
             </div>
           </div>
 
-          {/* Volume Control */}
-          <div className="flex items-center justify-between bg-[#20080f] p-3 rounded-xl border border-[#d4af37]/25">
-            <div className="flex items-center gap-2">
-              <Volume2 className="w-4 h-4 text-[#ffd700]" />
-              <span className="text-xs font-semibold text-[#ffd700]">Tabla Drum Volume</span>
+          {/* Multi-Channel Acoustic Drum Balance & Pitch Tuning */}
+          <div className="bg-[#20080f] p-4 rounded-xl border border-[#d4af37]/25 space-y-3.5">
+            <div className="flex items-center justify-between pb-1 border-b border-[#d4af37]/15">
+              <div className="flex items-center gap-2">
+                <Volume2 className="w-4 h-4 text-[#ffd700]" />
+                <span className="text-xs font-bold text-[#ffd700] uppercase tracking-wider">
+                  Acoustic Drum Mix &amp; Stereo Stage
+                </span>
+              </div>
+
+              {/* Sample Engine Status & Studio Launcher */}
+              <button
+                onClick={() => setShowSampleManager(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-[11px] font-bold text-emerald-300 transition shadow-sm"
+                title="Manage Acoustic Samples & Custom Uploads"
+              >
+                <Disc3 className="w-3.5 h-3.5 text-emerald-400 animate-spin" style={{ animationDuration: '6s' }} />
+                <span>44.1kHz Acoustic Samples · Studio</span>
+              </button>
             </div>
-            <div className="flex items-center gap-3 w-44">
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={volume}
-                onChange={(e) => onVolumeChange(Number(e.target.value))}
-                className="w-full accent-[#d4af37]"
-              />
-              <span className="font-mono text-xs text-[#d4af37] tabular-nums w-8 text-right">
-                {Math.round(volume * 100)}%
-              </span>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {/* Dayan (Treble Tabla) Volume */}
+              <div className="space-y-1 bg-[#18050a] p-2.5 rounded-lg border border-[#d4af37]/20">
+                <div className="flex items-center justify-between text-xs text-[#ffd700]">
+                  <span className="font-semibold flex items-center gap-1">
+                    <Music className="w-3 h-3 text-[#ffd700]" />
+                    Dayan (Right Treble)
+                  </span>
+                  <span className="font-mono tabular-nums">{Math.round(dayanVolume * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={dayanVolume}
+                  onChange={(e) => onDayanVolumeChange(Number(e.target.value))}
+                  className="w-full accent-[#d4af37]"
+                />
+                <div className="flex items-center justify-between text-[10px] text-[#d4af37]/70">
+                  <span>Chanti &amp; Syahi</span>
+                  <span>Pan: Right (+28%)</span>
+                </div>
+              </div>
+
+              {/* Bayan (Bass Tabla) Volume */}
+              <div className="space-y-1 bg-[#18050a] p-2.5 rounded-lg border border-[#d4af37]/20">
+                <div className="flex items-center justify-between text-xs text-[#ffd700]">
+                  <span className="font-semibold flex items-center gap-1">
+                    <Volume2 className="w-3 h-3 text-[#ffd700]" />
+                    Bayan (Left Bass)
+                  </span>
+                  <span className="font-mono tabular-nums">{Math.round(bayanVolume * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={bayanVolume}
+                  onChange={(e) => onBayanVolumeChange(Number(e.target.value))}
+                  className="w-full accent-[#d4af37]"
+                />
+                <div className="flex items-center justify-between text-[10px] text-[#d4af37]/70">
+                  <span>Modulated Copper</span>
+                  <span>Pan: Left (-28%)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Master Tabla & Dayan Fine Pitch */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+              {/* Master Tabla Volume */}
+              <div className="flex items-center justify-between bg-[#18050a] px-3 py-2 rounded-lg border border-[#d4af37]/20">
+                <span className="text-xs font-semibold text-[#ffd700]">Master Tabla</span>
+                <div className="flex items-center gap-2 w-32">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={volume}
+                    onChange={(e) => onVolumeChange(Number(e.target.value))}
+                    className="w-full accent-[#d4af37]"
+                  />
+                  <span className="font-mono text-xs text-[#d4af37] tabular-nums w-8 text-right">
+                    {Math.round(volume * 100)}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Dayan Pitch Fine Tuning */}
+              <div className="flex items-center justify-between bg-[#18050a] px-3 py-2 rounded-lg border border-[#d4af37]/20">
+                <span className="text-xs font-semibold text-[#ffd700]">
+                  Dayan Pitch <span className="text-[10px] opacity-75 font-mono">({rootSaNote})</span>
+                </span>
+                <div className="flex items-center gap-2 w-36">
+                  <input
+                    type="range"
+                    min="-50"
+                    max="50"
+                    step="1"
+                    value={dayanFineCents}
+                    onChange={(e) => onDayanFineCentsChange(Number(e.target.value))}
+                    className="w-full accent-[#d4af37]"
+                    title="Fine-tune Dayan pitch in cents"
+                  />
+                  <span className="font-mono text-xs text-[#d4af37] tabular-nums w-10 text-right">
+                    {dayanFineCents > 0 ? `+${dayanFineCents}` : dayanFineCents}¢
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -445,6 +555,19 @@ export const TablaStudio: React.FC<TablaStudioProps> = ({
           }}
         />
       )}
+
+      {/* Acoustic Tabla Sample Manager Modal */}
+      <TablaSampleManagerModal
+        isOpen={showSampleManager}
+        onClose={() => setShowSampleManager(false)}
+        dayanFineCents={dayanFineCents}
+        onDayanFineCentsChange={onDayanFineCentsChange}
+        dayanVolume={dayanVolume}
+        onDayanVolumeChange={onDayanVolumeChange}
+        bayanVolume={bayanVolume}
+        onBayanVolumeChange={onBayanVolumeChange}
+        rootSaNote={rootSaNote}
+      />
     </div>
   );
 };

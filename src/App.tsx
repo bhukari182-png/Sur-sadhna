@@ -74,6 +74,9 @@ export default function App() {
   // Volume States
   const [masterVolume, setMasterVolume] = useState<number>(0.85);
   const [tablaVolume, setTablaVolume] = useState<number>(0.9);
+  const [dayanVolume, setDayanVolume] = useState<number>(0.95);
+  const [bayanVolume, setBayanVolume] = useState<number>(0.95);
+  const [dayanFineCents, setDayanFineCents] = useState<number>(0);
   const [tanpuraVolume, setTanpuraVolume] = useState<number>(0.75);
   const [swarmandalVolume, setSwarmandalVolume] = useState<number>(0.8);
   const [harmoniumVolume, setHarmoniumVolume] = useState<number>(0.7);
@@ -94,6 +97,18 @@ export default function App() {
   useEffect(() => {
     audioEngine.setTablaVolume(tablaVolume);
   }, [tablaVolume]);
+
+  useEffect(() => {
+    audioEngine.setDayanVolume(dayanVolume);
+  }, [dayanVolume]);
+
+  useEffect(() => {
+    audioEngine.setBayanVolume(bayanVolume);
+  }, [bayanVolume]);
+
+  useEffect(() => {
+    audioEngine.setDayanFinePitch(dayanFineCents);
+  }, [dayanFineCents]);
 
   useEffect(() => {
     audioEngine.setTanpuraVolume(tanpuraVolume);
@@ -139,6 +154,9 @@ export default function App() {
         if (parsed.referenceFreq) setReferenceFreq(parsed.referenceFreq);
         if (parsed.masterVolume !== undefined) setMasterVolume(parsed.masterVolume);
         if (parsed.tablaVolume !== undefined) setTablaVolume(parsed.tablaVolume);
+        if (parsed.dayanVolume !== undefined) setDayanVolume(parsed.dayanVolume);
+        if (parsed.bayanVolume !== undefined) setBayanVolume(parsed.bayanVolume);
+        if (parsed.dayanFineCents !== undefined) setDayanFineCents(parsed.dayanFineCents);
         if (parsed.tanpuraVolume !== undefined) setTanpuraVolume(parsed.tanpuraVolume);
       }
     } catch (e) {
@@ -155,6 +173,9 @@ export default function App() {
         referenceFreq,
         masterVolume,
         tablaVolume,
+        dayanVolume,
+        bayanVolume,
+        dayanFineCents,
         tanpuraVolume,
         swarmandalVolume,
         harmoniumVolume,
@@ -163,7 +184,7 @@ export default function App() {
     } catch (e) {
       // storage overflow
     }
-  }, [saNote, saGender, referenceFreq, masterVolume, tablaVolume, tanpuraVolume, swarmandalVolume, harmoniumVolume]);
+  }, [saNote, saGender, referenceFreq, masterVolume, tablaVolume, dayanVolume, bayanVolume, dayanFineCents, tanpuraVolume, swarmandalVolume, harmoniumVolume]);
 
   // =========================================================================
   // TABLA ACTIONS
@@ -478,6 +499,13 @@ export default function App() {
             currentMatra={currentMatra}
             volume={tablaVolume}
             onVolumeChange={setTablaVolume}
+            dayanVolume={dayanVolume}
+            onDayanVolumeChange={setDayanVolume}
+            bayanVolume={bayanVolume}
+            onBayanVolumeChange={setBayanVolume}
+            dayanFineCents={dayanFineCents}
+            onDayanFineCentsChange={setDayanFineCents}
+            rootSaNote={saNote}
           />
         )}
 

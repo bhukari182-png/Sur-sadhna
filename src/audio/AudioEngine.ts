@@ -33,6 +33,22 @@ export class AudioEngine {
   private swarmandalGain: GainNode | null = null;
   private harmoniumGain: GainNode | null = null;
 
+  // Dedicated Dayan & Bayan Channel Nodes & Natural Stereo Panning
+  private dayanGain: GainNode | null = null;
+  private bayanGain: GainNode | null = null;
+  private dayanPanner: StereoPannerNode | null = null;
+  private bayanPanner: StereoPannerNode | null = null;
+  private dayanVolume: number = 0.95;
+  private bayanVolume: number = 0.95;
+  private dayanPitchFineCents: number = 0; // -50 to +50 cents relative to Sa
+
+  // Real Acoustic Sample Buffer Cache
+  private tablaSampleBuffers: Map<string, AudioBuffer> = new Map();
+  private isSamplesLoading: boolean = false;
+  private areSamplesLoaded: boolean = false;
+  private sampleStatus: Record<string, 'loading' | 'loaded' | 'custom' | 'fallback'> = {};
+  private onSampleLoadedCallback: (() => void) | null = null;
+
   // Global Tuning
   private saNote: PitchNote = 'C#';
   private referenceA4: number = 440; // 440Hz or 432Hz
@@ -103,9 +119,33 @@ export class AudioEngine {
       this.masterGain.gain.setValueAtTime(0.85, this.ctx.currentTime);
       this.masterGain.connect(this.ctx.destination);
 
+      // Master Tabla channel
       this.tablaGain = this.ctx.createGain();
       this.tablaGain.gain.setValueAtTime(0.9, this.ctx.currentTime);
       this.tablaGain.connect(this.masterGain);
+
+      // Separate Dayan & Bayan sub-channels
+      this.dayanGain = this.ctx.createGain();
+      this.dayanGain.gain.setValueAtTime(this.dayanVolume, this.ctx.currentTime);
+
+      this.bayanGain = this.ctx.createGain();
+      this.bayanGain.gain.setValueAtTime(this.bayanVolume, this.ctx.currentTime);
+
+      // Natural acoustic stage stereo positioning (Bayan panned left -0.28, Dayan panned right +0.28)
+      if (typeof this.ctx.createStereoPanner === 'function') {
+        this.dayanPanner = this.ctx.createStereoPanner();
+        this.dayanPanner.pan.setValueAtTime(0.28, this.ctx.currentTime);
+        this.dayanGain.connect(this.dayanPanner);
+        this.dayanPanner.connect(this.tablaGain);
+
+        this.bayanPanner = this.ctx.createStereoPanner();
+        this.bayanPanner.pan.setValueAtTime(-0.28, this.ctx.currentTime);
+        this.bayanGain.connect(this.bayanPanner);
+        this.bayanPanner.connect(this.tablaGain);
+      } else {
+        this.dayanGain.connect(this.tablaGain);
+        this.bayanGain.connect(this.tablaGain);
+      }
 
       this.tanpuraGain = this.ctx.createGain();
       this.tanpuraGain.gain.setValueAtTime(0.75, this.ctx.currentTime);
@@ -118,6 +158,9 @@ export class AudioEngine {
       this.harmoniumGain = this.ctx.createGain();
       this.harmoniumGain.gain.setValueAtTime(0.7, this.ctx.currentTime);
       this.harmoniumGain.connect(this.masterGain);
+
+      // Preload authentic acoustic tabla sample pack immediately
+      this.loadTablaSamples();
     }
 
     if (this.ctx.state === 'suspended') {
@@ -211,32 +254,213 @@ export class AudioEngine {
     }
   }
 
+  public setDayanVolume(v: number) {
+    this.dayanVolume = Math.max(0, Math.min(1, v));
+    if (this.dayanGain && this.ctx) {
+      this.dayanGain.gain.setTargetAtTime(this.dayanVolume, this.ctx.currentTime, 0.05);
+    }
+  }
+
+  public setBayanVolume(v: number) {
+    this.bayanVolume = Math.max(0, Math.min(1, v));
+    if (this.bayanGain && this.ctx) {
+      this.bayanGain.gain.setTargetAtTime(this.bayanVolume, this.ctx.currentTime, 0.05);
+    }
+  }
+
+  public setDayanFinePitch(cents: number) {
+    this.dayanPitchFineCents = Math.max(-100, Math.min(100, cents));
+  }
+
+  public getDayanVolume(): number {
+    return this.dayanVolume;
+  }
+
+  public getBayanVolume(): number {
+    return this.bayanVolume;
+  }
+
+  public getDayanFinePitch(): number {
+    return this.dayanPitchFineCents;
+  }
+
+  public getSampleStatus(): Record<string, string> {
+    return { ...this.sampleStatus };
+  }
+
+  public areAcousticSamplesLoaded(): boolean {
+    return this.tablaSampleBuffers.size > 0;
+  }
+
+  public setOnSampleLoadedCallback(cb: (() => void) | null) {
+    this.onSampleLoadedCallback = cb;
+  }
+
   // =========================================================================
-  // TABLA SOUND SYNTHESIS (Dayan & Bayan Acoustic Physical Modeling)
+  // REAL ACOUSTIC SAMPLE LOADER & CACHE (44.1 kHz PCM Studio Recordings)
+  // =========================================================================
+
+  public async loadTablaSamples(): Promise<void> {
+    if (!this.ctx || this.isSamplesLoading) return;
+    this.isSamplesLoading = true;
+
+    // Check IndexedDB for any user-uploaded custom studio recordings
+    let customSamples: Record<string, ArrayBuffer> = {};
+    try {
+      const { getAllCustomSamples } = await import('./sampleStorage');
+      customSamples = await getAllCustomSamples();
+    } catch (e) {
+      console.warn('Custom sample storage not available', e);
+    }
+
+    const SAMPLE_FILES: Record<string, string> = {
+      dayan_na: 'dayan_na.wav',
+      dayan_ta: 'dayan_ta.wav',
+      dayan_tin: 'dayan_tin.wav',
+      dayan_tun: 'dayan_tun.wav',
+      dayan_ti: 'dayan_ti.wav',
+      dayan_te: 'dayan_te.wav',
+      dayan_re: 'dayan_re.wav',
+      bayan_ge: 'bayan_ge.wav',
+      bayan_ghe: 'bayan_ghe.wav',
+      bayan_ke: 'bayan_ke.wav',
+      bayan_ka: 'bayan_ka.wav',
+      tabla_dha: 'tabla_dha.wav',
+      tabla_dhin: 'tabla_dhin.wav',
+      tabla_tirakita: 'tabla_tirakita.wav',
+      tabla_dhere: 'tabla_dhere.wav',
+    };
+
+    const baseUrl = import.meta.env.BASE_URL || '/';
+    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+
+    const loadPromises = Object.entries(SAMPLE_FILES).map(async ([key, filename]) => {
+      this.sampleStatus[key] = 'loading';
+      try {
+        // If user provided custom studio WAV for this bol, use it
+        if (customSamples[key] && customSamples[key].byteLength > 0) {
+          const customAudioBuf = await this.ctx!.decodeAudioData(customSamples[key].slice(0));
+          this.tablaSampleBuffers.set(key, customAudioBuf);
+          this.sampleStatus[key] = 'custom';
+          return;
+        }
+
+        // Fetch authentic built-in 44.1kHz acoustic WAV sample
+        const res = await fetch(`${cleanBaseUrl}audio/tabla/${filename}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const arrayBuf = await res.arrayBuffer();
+        const audioBuf = await this.ctx!.decodeAudioData(arrayBuf);
+        this.tablaSampleBuffers.set(key, audioBuf);
+        this.sampleStatus[key] = 'loaded';
+      } catch (err) {
+        console.warn(`Sample for ${key} fallback to acoustic physical engine:`, err);
+        this.sampleStatus[key] = 'fallback';
+      }
+    });
+
+    await Promise.allSettled(loadPromises);
+    this.isSamplesLoading = false;
+    this.areSamplesLoaded = true;
+    if (this.onSampleLoadedCallback) {
+      this.onSampleLoadedCallback();
+    }
+  }
+
+  public async loadCustomSample(bolKey: string, fileData: ArrayBuffer): Promise<boolean> {
+    if (!this.ctx) await this.initAudio();
+    if (!this.ctx) return false;
+
+    try {
+      const audioBuf = await this.ctx.decodeAudioData(fileData.slice(0));
+      this.tablaSampleBuffers.set(bolKey, audioBuf);
+      this.sampleStatus[bolKey] = 'custom';
+
+      const { saveCustomSample } = await import('./sampleStorage');
+      await saveCustomSample(bolKey, fileData);
+
+      if (this.onSampleLoadedCallback) this.onSampleLoadedCallback();
+      return true;
+    } catch (err) {
+      console.error(`Failed to decode custom sample for ${bolKey}:`, err);
+      return false;
+    }
+  }
+
+  public async resetToDefaultSamples(): Promise<void> {
+    try {
+      const { clearCustomSamples } = await import('./sampleStorage');
+      await clearCustomSamples();
+    } catch (e) {
+      console.warn(e);
+    }
+    this.tablaSampleBuffers.clear();
+    await this.loadTablaSamples();
+  }
+
+  // =========================================================================
+  // TABLA SOUND PLAYBACK (Sample-based with Physical Synthesis Fallback)
   // =========================================================================
 
   /**
-   * Dayan Strike: Natural acoustic treble drum with authentic Syahi harmonics
+   * Dayan Strike: Natural acoustic treble drum with pitch scaling to selected Sa
    */
   public playDayan(time: number, type: 'chanti' | 'tin' | 'tun' | 'ti' | 're' | 'tu', intensity: number = 1.0) {
     if (!this.ctx || !this.tablaGain) return;
+    const humanVelocity = Math.max(0.1, Math.min(1.2, intensity * (0.94 + Math.random() * 0.12)));
+
+    // Map bol type to sample key
+    let sampleKey = 'dayan_na';
+    if (type === 'tin') sampleKey = 'dayan_tin';
+    else if (type === 'tun' || type === 'tu') sampleKey = 'dayan_tun';
+    else if (type === 'ti') sampleKey = 'dayan_ti';
+    else if (type === 're') sampleKey = 'dayan_re';
+    else sampleKey = Math.random() > 0.5 ? 'dayan_na' : 'dayan_ta';
+
+    const buffer = this.tablaSampleBuffers.get(sampleKey);
+    if (buffer && this.dayanGain) {
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+
+      // Dayan Pitch Tuning:
+      // Reference sample base pitch is C#4 (277.18 Hz).
+      // Scale playbackRate to match current Sa root note frequency + Dayan fine tune cents.
+      const saFreq = this.getSaFrequency();
+      const baseSampleFreq = 277.18;
+      const pitchRatio = (saFreq / baseSampleFreq) * Math.pow(2, this.dayanPitchFineCents / 1200);
+      source.playbackRate.setValueAtTime(Math.max(0.35, Math.min(3.5, pitchRatio)), time);
+
+      // Velocity gain node
+      const vGain = this.ctx.createGain();
+      vGain.gain.setValueAtTime(humanVelocity, time);
+
+      source.connect(vGain);
+      vGain.connect(this.dayanGain);
+
+      // Micro-timing humanization (±1.5ms)
+      const humanTime = time + (Math.random() * 0.003 - 0.0015);
+      source.start(Math.max(this.ctx.currentTime, humanTime));
+      return;
+    }
+
+    // High-order acoustic physical modeling fallback
+    this.synthesizeDayanFallback(time, type, humanVelocity);
+  }
+
+  private synthesizeDayanFallback(time: number, type: 'chanti' | 'tin' | 'tun' | 'ti' | 're' | 'tu', humanVelocity: number) {
+    if (!this.ctx || !this.tablaGain) return;
     const saFreq = this.getSaFrequency();
-    // Human micro-velocity variation
-    const humanVelocity = intensity * (0.95 + Math.random() * 0.1);
+    const targetGain = this.dayanGain || this.tablaGain;
 
     if (type === 'chanti') {
-      // "Ta" / "Na" - Ringing outer rim strike (Chanti) with rich metallic bell overtones
       const osc1 = this.ctx.createOscillator();
       const osc2 = this.ctx.createOscillator();
       const osc3 = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       const filter = this.ctx.createBiquadFilter();
 
-      // Fundamental tuned Sa
       osc1.type = 'sine';
       osc1.frequency.setValueAtTime(saFreq * 2, time);
 
-      // Symmetrical circular Bessel modes from Syahi paste
       osc2.type = 'triangle';
       osc2.frequency.setValueAtTime(saFreq * 2 * 2.29, time);
 
@@ -255,7 +479,7 @@ export class AudioEngine {
       osc2.connect(filter);
       osc3.connect(filter);
       filter.connect(gain);
-      gain.connect(this.tablaGain);
+      gain.connect(targetGain);
 
       osc1.start(time);
       osc2.start(time);
@@ -263,11 +487,8 @@ export class AudioEngine {
       osc1.stop(time + 0.7);
       osc2.stop(time + 0.7);
       osc3.stop(time + 0.7);
-
-      // Acoustic rim click
       this.playTransientSnap(time, 2200, 0.02, 0.4 * humanVelocity);
     } else if (type === 'tin') {
-      // "Tin" - Sweet resonant singing stroke on maidan
       const osc1 = this.ctx.createOscillator();
       const osc2 = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -287,16 +508,14 @@ export class AudioEngine {
       gain2.connect(gain);
 
       osc1.connect(gain);
-      gain.connect(this.tablaGain);
+      gain.connect(targetGain);
 
       osc1.start(time);
       osc2.start(time);
       osc1.stop(time + 0.85);
       osc2.stop(time + 0.85);
-
       this.playTransientSnap(time, 1400, 0.025, 0.25 * humanVelocity);
     } else if (type === 'tun' || type === 'tu') {
-      // "Tun" / "Tu" - Open resonant singing stroke vibrating entire shell
       const osc1 = this.ctx.createOscillator();
       const osc2 = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -312,14 +531,13 @@ export class AudioEngine {
 
       osc1.connect(gain);
       osc2.connect(gain);
-      gain.connect(this.tablaGain);
+      gain.connect(targetGain);
 
       osc1.start(time);
       osc2.start(time);
       osc1.stop(time + 1.15);
       osc2.stop(time + 1.15);
     } else if (type === 'ti') {
-      // "Ti" / "Te" - Damped flat finger cluster on central syahi
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       const filter = this.ctx.createBiquadFilter();
@@ -337,14 +555,12 @@ export class AudioEngine {
 
       osc.connect(filter);
       filter.connect(gain);
-      gain.connect(this.tablaGain);
+      gain.connect(targetGain);
 
       osc.start(time);
       osc.stop(time + 0.06);
-
       this.playTransientSnap(time, 1100, 0.035, 0.6 * humanVelocity);
     } else if (type === 're') {
-      // "Re" - Soft index follow-up tap
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
 
@@ -356,7 +572,7 @@ export class AudioEngine {
       gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.04);
 
       osc.connect(gain);
-      gain.connect(this.tablaGain);
+      gain.connect(targetGain);
 
       osc.start(time);
       osc.stop(time + 0.05);
@@ -368,10 +584,48 @@ export class AudioEngine {
    */
   public playBayan(time: number, type: 'ghe' | 'kat' | 'tap', intensity: number = 1.0, pitchBendOffset: number = 0) {
     if (!this.ctx || !this.tablaGain) return;
-    const humanVelocity = intensity * (0.94 + Math.random() * 0.12);
+    const humanVelocity = Math.max(0.1, Math.min(1.25, intensity * (0.92 + Math.random() * 0.14)));
+
+    let sampleKey = 'bayan_ghe';
+    if (type === 'kat') {
+      sampleKey = Math.random() > 0.5 ? 'bayan_ke' : 'bayan_ka';
+    } else {
+      sampleKey = Math.random() > 0.5 ? 'bayan_ghe' : 'bayan_ge';
+    }
+
+    const buffer = this.tablaSampleBuffers.get(sampleKey);
+    if (buffer && this.bayanGain) {
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+
+      // Realistic wrist pressure modulation
+      if (type === 'ghe') {
+        const baseRate = 1.0 + (pitchBendOffset / 120) + (Math.random() * 0.04 - 0.02);
+        source.playbackRate.setValueAtTime(baseRate, time);
+        // Palm slides forward, bending pitch slightly up, then relaxing
+        source.playbackRate.linearRampToValueAtTime(baseRate * 1.07, time + 0.045);
+        source.playbackRate.exponentialRampToValueAtTime(baseRate * 0.95, time + 0.35);
+      }
+
+      const vGain = this.ctx.createGain();
+      vGain.gain.setValueAtTime(humanVelocity, time);
+
+      source.connect(vGain);
+      vGain.connect(this.bayanGain);
+
+      source.start(Math.max(this.ctx.currentTime, time));
+      return;
+    }
+
+    // High-order acoustic physical modeling fallback
+    this.synthesizeBayanFallback(time, type, humanVelocity, pitchBendOffset);
+  }
+
+  private synthesizeBayanFallback(time: number, type: 'ghe' | 'kat' | 'tap', humanVelocity: number, pitchBendOffset: number = 0) {
+    if (!this.ctx || !this.tablaGain) return;
+    const targetGain = this.bayanGain || this.tablaGain;
 
     if (type === 'ghe') {
-      // "Ge" / "Ghe" - Deep resonant sliding bass with wrist pressure modulation
       const osc = this.ctx.createOscillator();
       const subOsc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -380,7 +634,6 @@ export class AudioEngine {
       osc.type = 'sine';
       subOsc.type = 'triangle';
 
-      // Authentic live maestro palm pressure: slide from ~68Hz up to ~110Hz and settle
       const startF = 65 + pitchBendOffset;
       const peakF = 105 + pitchBendOffset + (Math.random() * 12 - 6);
       const settleF = 58 + pitchBendOffset;
@@ -404,17 +657,14 @@ export class AudioEngine {
       osc.connect(filter);
       subOsc.connect(filter);
       filter.connect(gain);
-      gain.connect(this.tablaGain);
+      gain.connect(targetGain);
 
       osc.start(time);
       subOsc.start(time);
       osc.stop(time + 0.65);
       subOsc.stop(time + 0.65);
-
-      // Low thump transient
       this.playTransientSnap(time, 130, 0.08, 0.45 * humanVelocity);
     } else if (type === 'kat') {
-      // "Kat" / "Ka" - Slap flat palm deadening stroke
       const bufferSize = Math.floor(this.ctx.sampleRate * 0.05);
       const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
       const data = buffer.getChannelData(0);
@@ -436,7 +686,7 @@ export class AudioEngine {
 
       noise.connect(filter);
       filter.connect(gain);
-      gain.connect(this.tablaGain);
+      gain.connect(targetGain);
 
       noise.start(time);
       noise.stop(time + 0.065);
@@ -471,18 +721,30 @@ export class AudioEngine {
     const cleanBol = bol.trim().toLowerCase().replace(/[\s\-_]/g, '');
 
     switch (cleanBol) {
-      case 'dha':
+      case 'dha': {
+        // Authentic compound concert acoustic stroke:
+        // Left hand Bayan (Ghe) + Right hand Dayan (Chanti/Na) with 2.5ms micro-flam
         this.playBayan(t, 'ghe', intensity);
-        this.playDayan(t, 'chanti', intensity);
+        this.playDayan(t + 0.0025, 'chanti', intensity);
         break;
-      case 'dhin':
+      }
+      case 'dhin': {
+        // Bayan (Ghe) + Dayan Maidan (Tin)
         this.playBayan(t, 'ghe', intensity);
-        this.playDayan(t, 'tin', intensity);
+        this.playDayan(t + 0.0025, 'tin', intensity);
         break;
-      case 'dhi':
+      }
+      case 'dhi': {
         this.playBayan(t, 'ghe', intensity * 0.95);
-        this.playDayan(t, 'tin', intensity * 0.9);
+        this.playDayan(t + 0.0025, 'tin', intensity * 0.9);
         break;
+      }
+      case 'dhinna': {
+        this.playBayan(t, 'ghe', intensity);
+        this.playDayan(t + 0.0025, 'tin', intensity * 0.9);
+        this.playDayan(t + 0.08, 'chanti', intensity * 0.85);
+        break;
+      }
       case 'ta':
       case 'na':
         this.playDayan(t, 'chanti', intensity);
@@ -514,15 +776,48 @@ export class AudioEngine {
       case 're':
         this.playDayan(t, 're', intensity * 0.85);
         break;
+      case 'tirakita':
+      case 'terekete': {
+        const tBuf = this.tablaSampleBuffers.get('tabla_tirakita');
+        if (tBuf && this.dayanGain) {
+          const source = this.ctx.createBufferSource();
+          source.buffer = tBuf;
+          const vGain = this.ctx.createGain();
+          vGain.gain.setValueAtTime(intensity, t);
+          source.connect(vGain);
+          vGain.connect(this.tablaGain!);
+          source.start(t);
+        } else {
+          this.playDayan(t, 'ti', intensity * 0.95);
+          this.playDayan(t + 0.05, 're', intensity * 0.85);
+          this.playBayan(t + 0.10, 'kat', intensity * 0.9);
+          this.playDayan(t + 0.15, 'chanti', intensity * 1.0);
+        }
+        break;
+      }
+      case 'dhere':
+      case 'dheredhere': {
+        const dBuf = this.tablaSampleBuffers.get('tabla_dhere');
+        if (dBuf && this.dayanGain) {
+          const source = this.ctx.createBufferSource();
+          source.buffer = dBuf;
+          const vGain = this.ctx.createGain();
+          vGain.gain.setValueAtTime(intensity, t);
+          source.connect(vGain);
+          vGain.connect(this.tablaGain!);
+          source.start(t);
+        } else {
+          this.playDayan(t, 'ti', intensity * 0.9);
+          this.playDayan(t + 0.08, 're', intensity * 0.8);
+          this.playDayan(t + 0.16, 'ti', intensity * 0.9);
+          this.playDayan(t + 0.24, 're', intensity * 0.8);
+        }
+        break;
+      }
       case 'dhage':
         this.playBayan(t, 'ghe', intensity);
-        this.playDayan(t, 'chanti', intensity * 0.85);
+        this.playDayan(t + 0.002, 'chanti', intensity * 0.85);
         this.playBayan(t + 0.08, 'ghe', intensity * 0.75);
-        break;
-      case 'dhinna':
-        this.playBayan(t, 'ghe', intensity);
-        this.playDayan(t, 'tin', intensity * 0.85);
-        this.playDayan(t + 0.08, 'chanti', intensity * 0.85);
         break;
       case 'nati':
         this.playDayan(t, 'chanti', intensity * 0.9);
@@ -542,17 +837,10 @@ export class AudioEngine {
         this.playDayan(t, 'ti', intensity * 0.9);
         this.playDayan(t + 0.07, 'ti', intensity * 0.8);
         break;
-      case 'tirakita':
-        // Authentic 4-stroke rapid articulation: Ti -> Re -> Ki -> Ta
-        this.playDayan(t, 'ti', intensity * 0.95);
-        this.playDayan(t + 0.045, 're', intensity * 0.8);
-        this.playBayan(t + 0.09, 'kat', intensity * 0.85);
-        this.playDayan(t + 0.135, 'chanti', intensity * 0.9);
-        break;
       case 'dhageten':
       case 'dhagena':
         this.playBayan(t, 'ghe', intensity);
-        this.playDayan(t, 'chanti', intensity * 0.8);
+        this.playDayan(t + 0.002, 'chanti', intensity * 0.8);
         this.playDayan(t + 0.08, 'tin', intensity * 0.8);
         break;
       case 'gadi':
